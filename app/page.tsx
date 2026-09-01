@@ -11,16 +11,14 @@ import {
   Server,
   ShieldCheck,
 } from "lucide-react";
-import { headers } from "next/headers";
 import Image from "next/image";
 import {
   formatClaimValue,
   getNumericClaim,
+  getPassportSession,
   getStringClaim,
-  PASSPORT_HEADER,
   type PassportClaims,
   type PassportSession,
-  parsePassportSession,
 } from "@/lib/passport";
 
 export const dynamic = "force-dynamic";
@@ -30,8 +28,7 @@ const passportGuideUrl = "https://vercel.com/kb/guide/vercel-passport";
 type ProofState = "complete" | "waiting" | "error";
 
 export default async function Home() {
-  const requestHeaders = await headers();
-  const session = parsePassportSession(requestHeaders.get(PASSPORT_HEADER));
+  const session = await getPassportSession();
   const isVercel = process.env.VERCEL === "1";
 
   return (
