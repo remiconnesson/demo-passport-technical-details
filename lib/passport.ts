@@ -1,3 +1,5 @@
+import { getIdentity } from "@vercel/passport";
+
 export const PASSPORT_HEADER = "x-vercel-oidc-passport-token";
 
 export type PassportClaims = Record<string, unknown>;
@@ -7,24 +9,16 @@ export type PassportSession =
   | { status: "invalid" }
   | { status: "authenticated"; claims: PassportClaims };
 
-export function parsePassportSession(token: string | null): PassportSession {
-  if (!token) return { status: "missing" };
-
-  const parts = token.split(".");
-  if (parts.length !== 3 || parts.some((part) => part.length === 0)) {
-    return { status: "invalid" };
-  }
-
+export async function getPassportSession(): Promise<PassportSession> {
   try {
-    const payload = JSON.parse(
-      Buffer.from(parts[1], "base64url").toString("utf8"),
-    );
+    const identity = await getIdentity();
 
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      return { status: "invalid" };
-    }
+    if (!identity) return { status: "missing" };
 
-    return { status: "authenticated", claims: payload as PassportClaims };
+    return {
+      status: "authenticated",
+      claims: identity.payload,
+    };
   } catch {
     return { status: "invalid" };
   }

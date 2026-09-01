@@ -1,36 +1,35 @@
-import { headers } from "next/headers";
-import {
-  getStringClaim,
-  PASSPORT_HEADER,
-  parsePassportSession,
-} from "@/lib/passport";
+import { getIdentity } from "@vercel/passport";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const requestHeaders = await headers();
-  const session = parsePassportSession(requestHeaders.get(PASSPORT_HEADER));
+  try {
+    const identity = await getIdentity();
 
-  if (session.status !== "authenticated") {
+    if (!identity) {
+      return Response.json(
+        { authenticated: false, reason: "Passport identity not found" },
+        { status: 401 },
+      );
+    }
+
+    return Response.json({
+      authenticated: true,
+      identity: {
+        subject: identity.subject,
+        externalSub: identity.externalSubject,
+        email: identity.email ?? null,
+        name: identity.name ?? null,
+      },
+      claims: identity.payload,
+    });
+  } catch {
     return Response.json(
       {
         authenticated: false,
-        reason:
-          session.status === "missing"
-            ? "Passport header not present"
-            : "Passport token is malformed",
+        reason: "Passport identity could not be verified",
       },
       { status: 401 },
     );
   }
-
-  return Response.json({
-    authenticated: true,
-    identity: {
-      externalSub: getStringClaim(session.claims, "external_sub"),
-      email: getStringClaim(session.claims, "email"),
-      name: getStringClaim(session.claims, "name"),
-    },
-    claims: session.claims,
-  });
 }
